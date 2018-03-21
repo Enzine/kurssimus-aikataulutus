@@ -3,7 +3,12 @@
     {
       "id": 1,
       "name": "Kandidaatin tutkielma",
-      "exams": "ei koetta"
+      "exams": "okoko"
+    },
+    {
+      "id": 2,
+      "name": "Tilastollinen päättely I",
+      "exams": "Huomenna"
     }
   ]
 }

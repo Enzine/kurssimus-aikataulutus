@@ -1,7 +1,8 @@
 import React from 'react'
-import axios from 'axios'
 import CourseForm from './CourseForm'
 import Course from './Course'
+import courseService from '../services/courses'
+import Notification from './Notification'
 
 class App extends React.Component {
   constructor(props) {
@@ -9,15 +10,26 @@ class App extends React.Component {
     this.state = {
       newName: '',
       newExams: '',
-      courses: []
+      error: null,
+      courses: [],
+      coursesToShow: []
     }
   }
 
   componentDidMount() {
-    axios
-      .get('http://localhost:3001/courses')
-      .then(response => {
-        this.setState({ courses: response.data })
+    courseService
+      .getAll()
+      .then(courses => {
+        this.setState({ 
+          courses,
+          coursesToShow: courses
+        })
+      })
+      .catch(error => {
+        this.setState({ error: 'Kurssien haku palvelimelta epäonnistui'})
+        setTimeout(() => {
+          this.setState({ error: null })
+        }, 5000)
       })
   }
 
@@ -33,15 +45,16 @@ class App extends React.Component {
       exams: this.state.newExams
     }
 
-    if (this.state.courses.find(course => course.name === this.state.newName)) {
-      console.log(`the name '${this.state.newName}' is already taken`)
+    const oldCourse = this.state.courses.find(course => course.name === this.state.newName)
+
+    if (oldCourse) {
+      this.updateCourse(oldCourse.id)
     } else {
       console.log('kurssia ei ole vielä. voit luoda uuden.')
-      axios
-        .post('http://localhost:3001/courses', courseObject)
-        .then(response => {
-          console.log(response.data)
-          this.setState({ courses: this.state.courses.concat(response.data) })
+      courseService
+        .create(courseObject)
+        .then(newCourse => {
+          this.setState({ courses: this.state.courses.concat(newCourse) })
         })
         .catch(exception => {
           console.log('virhe kurssia lisättäessä', exception)
@@ -51,6 +64,30 @@ class App extends React.Component {
       newName: '',
       newExams: ''
     })
+  }
+
+  updateCourse = (id) => {
+    const course = this.state.courses.find(course => course.id === id)
+    if (!course) {
+      console.log(`Found no course with id ${id}.`)
+      return
+    }
+    const ok = window.confirm(`Olet päivittämässä vanhaa kurssia. Hyväksy painamalla 'ok'.`)
+    if (!ok) {
+      return
+    }
+    const courseToUpdate = ({
+      id: course.id,
+      name: course.name,
+      exams: this.state.newExams
+    })
+    courseService
+      .update(id, courseToUpdate)
+      .then(updatedCourse => {
+        this.setState({
+          courses: this.state.courses.map(c => c.id !== course.id ? c : this.updateCourse),
+        })
+      })
   }
 
   removeCourse = (id) => {
@@ -63,31 +100,45 @@ class App extends React.Component {
     if (!ok) {
       return
     } else {
-      console.log(course)
-      axios
-        .delete(`http://localhost:3001/courses/${course.id}`)
-        .then(response => {
+      courseService
+        .remove(id)
+        .then(removedCourse => {
           this.setState({ 
             courses: this.state.courses.filter(person => person.id !== id)
           })
-          console.log(`Kurssi ${course.name} poistettiin onnistuneesti.`)
+          console.log(`Kurssi '${course.name}' poistettiin onnistuneesti.`)
         })
     }
   }
+  
+  showOnlyOne = (courseObject) => {
+    this.setState({
+      coursesToShow: this.state.courses.filter(course => course.id === courseObject.id)
+    })
+  }
  
+  showAll = () => {
+    this.setState({
+      coursesToShow: this.state.courses
+    })
+  }
+
   render() {
     const list = 
     (
       <ul>
         {this.state.courses.map(course => 
-          <li key={course.name}>
-            {course.name} <button type='delete' onClick={() => this.removeCourse(course.id)}>delete</button>
+          <li key={course.id}>
+            <p onClick={() => this.showOnlyOne(course)}>{course.name}</p> 
+            <button type='delete' onClick={() => this.removeCourse(course.id)}>poista</button>
           </li>
         )}
       </ul>
     )
+    console.log('app.js ', this.state.error, typeof this.state.error)
     return (
       <div>
+        <Notification message={this.state.error}/>
         <h2>Tervetuloa!</h2>
         <CourseForm 
           addCourse={this.addCourse}
@@ -95,13 +146,15 @@ class App extends React.Component {
           newName={this.state.newName}
           newExams={this.state.newExams}
         />
-        {this.state.courses.length == 1 &&
-          <Course course={this.state.courses[0]}/> 
+        {this.state.coursesToShow.length === 1 &&
+          <div>
+            <Course course={this.state.coursesToShow[0]}/>
+            <p onClick={() => this.showAll()}>Näytä kaikki kurssit</p> 
+          </div>
         }
-        {this.state.courses.length != 1 &&
+        {this.state.coursesToShow.length !== 1 &&
           list
         }
-        
       </div>
     )
   }
