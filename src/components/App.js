@@ -10,10 +10,21 @@ class App extends React.Component {
     this.state = {
       newName: '',
       newExams: '',
-      error: null,
+      notification: null,
       courses: [],
       coursesToShow: []
     }
+  }
+
+  notify = (message, type='info') => {
+    this.setState({ 
+      notification: { message, type }
+    })
+    setTimeout(() => {
+      this.setState({
+        notification: null
+      })
+    }, 10000)
   }
 
   componentDidMount() {
@@ -25,11 +36,9 @@ class App extends React.Component {
           coursesToShow: courses
         })
       })
-      .catch(error => {
-        this.setState({ error: 'Kurssien haku palvelimelta epäonnistui'})
-        setTimeout(() => {
-          this.setState({ error: null })
-        }, 5000)
+      .catch(exception => {
+        this.notify('Kurssien haku palvelimelta epäonnistui', 'error')
+        console.log('got exception while fetching courses from server', exception)
       })
   }
 
@@ -50,14 +59,15 @@ class App extends React.Component {
     if (oldCourse) {
       this.updateCourse(oldCourse.id)
     } else {
-      console.log('kurssia ei ole vielä. voit luoda uuden.')
       courseService
         .create(courseObject)
         .then(newCourse => {
           this.setState({ courses: this.state.courses.concat(newCourse) })
+          this.notify(`Kurssi '${newCourse.name}' lisättiin kurssilistaan`)
         })
         .catch(exception => {
-          console.log('virhe kurssia lisättäessä', exception)
+          this.notify('Uutta kurssia ei voitu lisätä', 'error')
+          console.log('Got an exception while adding a new course', exception)
         })
     }
     this.setState({ 
@@ -69,7 +79,7 @@ class App extends React.Component {
   updateCourse = (id) => {
     const course = this.state.courses.find(course => course.id === id)
     if (!course) {
-      console.log(`Found no course with id ${id}.`)
+      this.notify(`Found no course with id ${id}.`, 'error')
       return
     }
     const ok = window.confirm(`Olet päivittämässä vanhaa kurssia. Hyväksy painamalla 'ok'.`)
@@ -87,13 +97,18 @@ class App extends React.Component {
         this.setState({
           courses: this.state.courses.map(c => c.id !== course.id ? c : this.updateCourse),
         })
+        this.notify(`Kurssin '${course.name}' muuttaminen onnistui`)
+      })
+      .catch(exception => {
+        this.notify(`Ei voitu muuttaa kurssia ${course}`, 'error')
+        console.log('Got an exception while updating a course', exception)
       })
   }
 
   removeCourse = (id) => {
     const course = this.state.courses.find(course => course.id === id)
     if (!course) {
-      console.log(`Found no course with id ${id}.`)
+      this.notify(`Found no course with id ${id}.`, 'error')
       return
     }
     const ok = window.confirm(`Poistetaanko kurssi: ${course.name}?`)
@@ -106,7 +121,11 @@ class App extends React.Component {
           this.setState({ 
             courses: this.state.courses.filter(person => person.id !== id)
           })
-          console.log(`Kurssi '${course.name}' poistettiin onnistuneesti.`)
+          this.notify(`Kurssi '${course.name}' poistettiin onnistuneesti.`)
+        })
+        .catch(exception => {
+          this.notify('Kurssia ei voitu poistaa', 'error')
+          console.log('Got an exception while removing a course', exception)
         })
     }
   }
@@ -135,10 +154,9 @@ class App extends React.Component {
         )}
       </ul>
     )
-    console.log('app.js ', this.state.error, typeof this.state.error)
     return (
       <div>
-        <Notification message={this.state.error}/>
+        <Notification notification={this.state.notification}/>
         <h2>Tervetuloa!</h2>
         <CourseForm 
           addCourse={this.addCourse}
