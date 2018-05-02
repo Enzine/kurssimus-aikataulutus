@@ -6,7 +6,7 @@ const Course = ({
   return (
     <div>
       <h2>{course.name}</h2>
-      <b>Koepäivät:</b> {course.exams}
+      <p><b>Koepäivät:</b> {course.exams}</p>
     </div>
   )
 }

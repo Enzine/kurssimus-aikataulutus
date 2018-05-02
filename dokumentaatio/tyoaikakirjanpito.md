@@ -8,4 +8,5 @@
 | 20.3. | 3    | Yksittäistä kurssia klikkaamalla näkyy kurssin tiedot, axios-kyselyt keskitetty service-tiedostoon, tyylien kanssa leikkimistä, notifikaatioiden alottelua |
 | 21.3. | 3    | Jatkoa notifikaatioiden kanssa sekä backendin aloittelua |
 | 22.3. | 3    | Lisää backendiä ja tahmea yläpalkki |
+| 2.5. | 3  | Työskentelyä yläpalkin linkkien kanssa sekä css |
 | yht   | ?    | | 
