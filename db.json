@@ -9,6 +9,11 @@
       "id": 2,
       "name": "Tilastollinen päättely I",
       "exams": "Huomenna"
+    },
+    {
+      "id": 3,
+      "name": "Javascript-projekti",
+      "exams": "ei koetta"
     }
   ]
 }
